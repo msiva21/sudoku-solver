@@ -67,8 +67,8 @@ This is followed by 26 lines of <x-coordinate> <y-coordinate> <value>
   i.e. the first line 0 0 8 means the first cell of the board has 8; in terms of coordinates, board[0][0] = 8
   similarly, the last line 8 8 3 means the last cell of the board has 3, i.e. board[8][8] = 3
 
-You may provide all the input in a single line too. 
-The above input would translate into this: 
+Alternatively, you may provide all the input in a single line. 
+The above input would look like this: 
 
 26
 0 0 8
