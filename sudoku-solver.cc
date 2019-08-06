@@ -16,8 +16,10 @@ using possibilities = std::vector<int>;
 using cell = std::variant<//const int,	//The puzzle started with this filled
 						int, 			//What we came up with while solving
 						possibilities>;	//What possible values this cell can assume
-
-using board = std::array<std::array<cell, 9>, 9>;
+constexpr int x_size = 9;
+constexpr int y_size = 9;
+constexpr int board_size = x_size * y_size;
+using board = std::array<std::array<cell, x_size>, y_size>;
 //using board = std::vector<std::vector<cell>>;
 
 const possibilities all_possibilities{1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -101,16 +103,20 @@ struct get_no_possibilities
 	}
 };
 
-int get_cell_width(const board& b) {
+//Gets maximum no of possibilities
+int get_max_cell_width(const board& b) {
 	return std::accumulate(begin(b), end(b), 1, [](int curr_max, const auto& row){
-		return std::max(curr_max, 
-		std::accumulate(begin(row), end(row), curr_max, [](int curr_max, const auto& c) {
-			return std::max(curr_max, std::visit(get_no_possibilities{}, c));
-		}));
+		return std::max(
+			curr_max, 
+			std::accumulate(begin(row), end(row), curr_max, [](int curr_max, const auto& c) {
+				return std::max(curr_max, std::visit(get_no_possibilities{}, c));
+			})
+		);
 	});
 }
+
 void print(const board& b) {
-	int width = get_cell_width(b);
+	int width = get_max_cell_width(b);
 	std::for_each(begin(b), end(b), [width](const auto& row) {
 		std::for_each(begin(row), end(row), [width](const auto& c) {
 			std::visit(outputter{std::cout, width}, c);
@@ -127,6 +133,9 @@ struct assignment
 	int value;
 	bool operator==(const assignment& other) const {
 		return x == other.x && y == other.y && value == other.value;
+	}
+	bool operator!=(const assignment& other) const {
+		return !(*this == other);
 	}
 };
 void print(const assignment& assign) {
@@ -336,15 +345,20 @@ void make_moves(board& b, std::vector<assignment>& moves) {
 	}
 }
 
-void read_start_cells(std::vector<assignment>& moves) {
+std::vector<assignment> read_init_assignments() {
+	std::vector<assignment> moves;
+	moves.reserve(board_size);
+	
 	std::istream_iterator<int> in(std::cin);
 	for (int count = *in++; count; --count) {
 		int x = *in++;
 		int y = *in++;
 		int value = *in++;
-		//moves.push_back({x, y, value});
-		moves << assignment{x, y, value};
+		moves.emplace_back(assignment{x, y, value});
+		//moves << assignment{x, y, value};
 	}
+	
+	return moves;
 }
 
 int main(int argc, char** argv)
@@ -353,10 +367,10 @@ int main(int argc, char** argv)
 	print(b);
 
 	//std::vector<std::tuple<int, int, int>> moves;
-	std::vector<assignment> moves;
-	moves.reserve(810);
+	//std::vector<assignment> moves;
+	//moves.reserve(810);
 
-	read_start_cells(moves);
+	auto moves = read_init_assignments();
 	make_moves(b, moves);
 
 	std::cout << "Finally: \n";
