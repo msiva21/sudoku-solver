@@ -50,6 +50,9 @@ const board starting_board{ er, er, er, er, er, er, er, er, er };
 							{ap, ap, ap, ap, ap, ap, ap, ap, ap}, 
 							{ap, ap, ap, ap, ap, ap, ap, ap, ap} };*/
 
+const char cell_separator = '|';
+const char line_separator = '-';
+
 struct outputter
 {
 	std::ostream& out;
@@ -81,7 +84,7 @@ struct outputter
 			pre_pad_for(1);
 			out << ' ' << i << ' ';
 			post_pad_for(1);
-			out << '|';
+			out << cell_separator;
 		}
 		void operator()(const possibilities& poss) {
 			pre_pad_for(poss.size());
@@ -91,7 +94,7 @@ struct outputter
 			});
 			out << '}';
 			post_pad_for(poss.size());
-			out << '|';
+			out << cell_separator;
 		}
 };
 
@@ -116,14 +119,17 @@ int get_max_cell_width(const board& b) {
 }
 
 void print(const board& b) {
-	int width = get_max_cell_width(b);
-	std::for_each(begin(b), end(b), [width](const auto& row) {
-		std::for_each(begin(row), end(row), [width](const auto& c) {
-			std::visit(outputter{std::cout, width}, c);
+	const int cell_width = get_max_cell_width(b);
+	const int line_width = (cell_width + 2/*space b4 & aftr*/) * y_size + (y_size + 1); //separator '|'
+	std::for_each(begin(b), end(b), [cell_width, line_width](const auto& row) {
+	    std::cout << std::setfill(line_separator) << std::setw(line_width) << '\n';
+	    std::cout << cell_separator;
+		std::for_each(begin(row), end(row), [cell_width](const auto& c) {
+			std::visit(outputter{std::cout, cell_width}, c);
 		});
 		std::cout << '\n';
 	});
-	std::cout << '\n';
+	std::cout << std::setfill(line_separator) << std::setw(line_width) << '\n';
 }
 
 struct assignment
@@ -193,7 +199,7 @@ auto size_is_1 = [](const auto& container){ return container.size() == 1; };
 	}
 }*/
 
-auto update_row(board& b, const assignment& assign) {
+auto analyse_row(board& b, const assignment& assign) {
 	std::vector<assignment> next_assignments;
 	//std::array<std::vector<std::vector<int>::iterator>, 9> numbers;
 	tracking track;
@@ -225,7 +231,7 @@ auto update_row(board& b, const assignment& assign) {
 	}
 	return next_assignments;
 }
-auto update_col(board& b, const assignment& assign) {
+auto analyse_col(board& b, const assignment& assign) {
 	std::vector<assignment> next_assignments;
 	tracking track;
 	for (int curr = 0; curr != 9; ++curr) {
@@ -254,24 +260,24 @@ auto update_col(board& b, const assignment& assign) {
 	}
 	return next_assignments;
 }
-auto update_adj(board& b, const assignment& assign) {
+auto analyse_adj(board& b, const assignment& assign) {
 	std::vector<assignment> next_assignments;
 	tracking track;
 	auto [x, y_init] = get_adj_start(assign);
 	//const auto y_init = y;	//to restart inner for loop for column
 	const auto x_end = x + 3;
 	const auto y_end = y_init + 3;
-	//std::cout << "update_adj: x_init = " << x << ", y_init = " << y_init << ", x_end = " << x_end 
+	//std::cout << "analyse_adj: x_init = " << x << ", y_init = " << y_init << ", x_end = " << x_end 
 		//<< ", y_end = " << y_end << std::endl;
 
 	for (; x < x_end; ++x) {
 		//std::cout << "x = " << x << std::endl;
-		//Cannot skip this row despite update_row because we need to track
+		//Cannot skip this row despite analyse_row because we need to track
 		//if (x == assign.x)
 			//continue;
 		for (auto y = y_init; y < y_end; ++y) {
 			//std::cout << "y = " << y << std::endl;
-			//Cannot skip this column despite update_col because we need to track
+			//Cannot skip this column despite analyse_col because we need to track
 			//if (y == assign.y)
 				//continue;
 			auto no_possibilities = std::visit(eliminate_possibility{assign.value}, b[x][y]);
@@ -316,12 +322,12 @@ auto make_move(board& b, const assignment& assign) {
 
 	b[assign.x][assign.y] = assign.value;
 
-	auto next_row_assigns = update_row(b, assign);
+	auto next_row_assigns = analyse_row(b, assign);
 
-	auto next_col_assigns = update_col(b, assign);
+	auto next_col_assigns = analyse_col(b, assign);
 	next_row_assigns.insert(end(next_row_assigns), begin(next_col_assigns), end(next_col_assigns));
 
-	auto next_adj_assigns = update_adj(b, assign);
+	auto next_adj_assigns = analyse_adj(b, assign);
 	next_row_assigns.insert(end(next_row_assigns), begin(next_adj_assigns), end(next_adj_assigns));
 
 	return next_row_assigns;
