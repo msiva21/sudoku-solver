@@ -120,7 +120,7 @@ int get_max_cell_width(const board& b) {
 
 void print(const board& b) {
 	const int cell_width = get_max_cell_width(b);
-	const int line_width = (cell_width + 2/*space b4 & aftr*/) * y_size + (y_size + 1); //separator '|'
+	const int line_width = (cell_width + 2/*space b4 & aftr*/) * y_size + (y_size + 2); //separator '|'
 	std::for_each(begin(b), end(b), [cell_width, line_width](const auto& row) {
 	    std::cout << std::setfill(line_separator) << std::setw(line_width) << '\n';
 	    std::cout << cell_separator;
